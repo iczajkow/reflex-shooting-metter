@@ -33,119 +33,113 @@ int gamesPlayed; //Contains the total number of games played for the life of the
 
 void setup()
 {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    pinMode(LED, OUTPUT);
-    LEDOFF(); //Turn off LED
+  pinMode(LED, OUTPUT);
+  LEDOFF(); //Turn off LED
 
-    pinMode(button, INPUT_PULLUP);
+  pinMode(button, INPUT_PULLUP);
 
-    randomSeed(analogRead(A1)); //Get noise to seed the random number generator
+  randomSeed(analogRead(A1)); //Get noise to seed the random number generator
 
-    segmentDisplay.begin(9600); //Talk to the Serial7Segment at 9600 bps
-    segmentDisplay.write('v'); //Reset the display - this forces the cursor to return to the beginning of the display
+  segmentDisplay.begin(9600); //Talk to the Serial7Segment at 9600 bps
+  segmentDisplay.write('v');  //Reset the display - this forces the cursor to return to the beginning of the display
 
-    scrollTitle();
+  scrollTitle();
 }
 
 void loop()
 {
-    if(digitalRead(button) == LOW)
-    {
-        Serial.println("Playing");
-        playGame();
-        idleLoops = 0;
-    }
+  if (digitalRead(button) == LOW)
+  {
+    Serial.println("Playing");
+    playGame();
+    idleLoops = 0;
+  }
 
-    pulseTheButton(); //If no one is playing, pulse LED to intice them. Function takes 6 seconds to complete.
+  pulseTheButton(); //If no one is playing, pulse LED to intice them. Function takes 6 seconds to complete.
 
-    idleLoops++;
-    if(idleLoops > 9) //Play a screen saver every 60 seconds.
-    {
-        scrollTitle(); //Screen saver = display title
-        idleLoops = 0;
-    }
+  idleLoops++;
+  if (idleLoops > 9) //Play a screen saver every 60 seconds.
+  {
+    scrollTitle(); //Screen saver = display title
+    idleLoops = 0;
+  }
 }
 
 void playGame()
 {
-    segmentDisplay.write('v'); //Reset the display
+  segmentDisplay.write('v'); //Reset the display
 
-    delay(25); //Debounce the button a bit
+  delay(25); //Debounce the button a bit
 
-    while(digitalRead(button) == LOW) ; //Wait for user to stop hitting button
+  while (digitalRead(button) == LOW)
+    ; //Wait for user to stop hitting button
 
-    LEDLOW(); //Turn LED on low to indicate the beginning of the game
+  LEDLOW(); //Turn LED on low to indicate the beginning of the game
 
-    //Get random number of milliseconds
-    long lightTime = random(2000, 3500); //From 2 to 3.5 seconds
+  //Get random number of milliseconds
+  long lightTime = random(2000, 3500); //From 2 to 3.5 seconds
 
-    long zeroTime = millis();
+  long zeroTime = millis();
 
-    while(millis() - zeroTime < lightTime) //Wait for random amount of time to go by
+  while (millis() - zeroTime < lightTime) //Wait for random amount of time to go by
+  {
+    //If the user hits the button in this time then error out (cheater!)
+    if (digitalRead(button) == LOW)
     {
-        //If the user hits the button in this time then error out (cheater!)
-        if(digitalRead(button) == LOW)
-        {
-            segmentDisplay.write('v'); //Reset the display
-            segmentDisplay.print("-Err");
-            Serial.println("Err!");
-            blinkButton();
-            return;
-        }
+      segmentDisplay.write('v'); //Reset the display
+      segmentDisplay.print("-Err");
+      Serial.println("Err!");
+      blinkButton();
+      return;
     }
+  }
 
-    //Begin game
-    Serial.println("Go!");
-    LEDON();
-    long beginTime = millis(); //Record this as the beginning of the test
+  //Begin game
+  Serial.println("Go!");
+  LEDON();
+  long beginTime = millis(); //Record this as the beginning of the test
 
-    //Wait for user to hit the button
-    while(digitalRead(button) == HIGH)
+  //Wait for user to hit the button
+  while (digitalRead(button) == HIGH)
+  {
+    //Check to see if the user fails to respond in 10 seconds
+    timeDiff = millis() - beginTime;
+    if (timeDiff > 9999)
     {
-        //Check to see if the user fails to respond in 10 seconds
-        timeDiff = millis() - beginTime;
-        if(timeDiff > 9999)
-        {
-            timeDiff = 9999;
-            segmentDisplay.write('v'); //Reset the display
-            float timeDiffInSeconds = (float)timeDiff / (float)1000;
-            segmentDisplay.print(String(timeDiffInSeconds, 3));
-            blinkButton();
-            return;
-        }
+      timeDiff = 9999;
+      segmentDisplay.write('v'); //Reset the display
+      segmentDisplay.print(timeDiff);
+      blinkButton();
+      return;
     }
+  }
 
-    gameTime = String(timeDiff);
+  gameTime = String(timeDiff);
 
-    //Right adjust the time
-    if(timeDiff < 10)
-        gameTime = "   " + gameTime;
-    else if(timeDiff < 100)
-        gameTime = "  " + gameTime;
-    else if(timeDiff < 1000)
-        gameTime = " " + gameTime;
-    else
-    {
-      float timeDiffInSeconds = (float)timeDiff / (float)1000;
-      gameTime = String(timeDiffInSeconds, 3); 
-    }
-        
+  //Right adjust the time
+  if (timeDiff < 10)
+    gameTime = "   " + gameTime;
+  else if (timeDiff < 100)
+    gameTime = "  " + gameTime;
+  else if (timeDiff < 1000)
+    gameTime = " " + gameTime;
 
-    segmentDisplay.write('v'); //Reset the display
-    segmentDisplay.print(gameTime); //Display the game time
+  segmentDisplay.write('v');      //Reset the display
+  segmentDisplay.print(gameTime); //Display the game time
 
-    Serial.print("Reaction time:");
-    Serial.println(gameTime);
+  Serial.print("Reaction time:");
+  Serial.println(gameTime);
 
-    blinkButton(); //Blink the LED to indicate the end of the game
+  blinkButton(); //Blink the LED to indicate the end of the game
 
-    //Record that we have played this game
-    gamesPlayed++;
-    Serial.print("This time played:");
-    Serial.println(gamesPlayed);
+  //Record that we have played this game
+  gamesPlayed++;
+  Serial.print("This time played:");
+  Serial.println(gamesPlayed);
 
-    //After the game is complete, the display will show the gameTime for awhile
+  //After the game is complete, the display will show the gameTime for awhile
 }
 
 //If there is no game going on, pulse the LED on/off
@@ -153,65 +147,69 @@ void playGame()
 //This function takes approximately 6 seconds to complete
 void pulseTheButton(void)
 {
-    //Fade LED on
-    for(int fadeValue = 0 ; fadeValue <= 255; fadeValue += 5)
-    {
-        if(digitalRead(button) == LOW) return;
+  //Fade LED on
+  for (int fadeValue = 0; fadeValue <= 255; fadeValue += 5)
+  {
+    if (digitalRead(button) == LOW)
+      return;
 
-        analogWrite(LED, fadeValue);
-        delay(30);
-    }
+    analogWrite(LED, fadeValue);
+    delay(30);
+  }
 
-    //Fade LED off
-    for(int fadeValue = 255 ; fadeValue >= 0; fadeValue -= 5)
-    {
-        if(digitalRead(button) == LOW) return;
+  //Fade LED off
+  for (int fadeValue = 255; fadeValue >= 0; fadeValue -= 5)
+  {
+    if (digitalRead(button) == LOW)
+      return;
 
-        analogWrite(LED, fadeValue);
-        delay(30);
-    }
+    analogWrite(LED, fadeValue);
+    delay(30);
+  }
 
-    //Turn LED off for awhile
-    for(int x = 0 ; x < 100 ; x++)
-    {
-        if(digitalRead(button) == LOW) return;
+  //Turn LED off for awhile
+  for (int x = 0; x < 100; x++)
+  {
+    if (digitalRead(button) == LOW)
+      return;
 
-        analogWrite(LED, 0);
-        delay(30);
-    }
+    analogWrite(LED, 0);
+    delay(30);
+  }
 }
 
 //Quickly blinks to button indicating the end of a game
 void blinkButton()
 {
-    for(int x = 0 ; x < 7 ; x++)
-    {
-        LEDON();
-        delay(60);
-        LEDOFF();
-        delay(60);
-    }
+  for (int x = 0; x < 7; x++)
+  {
+    LEDON();
+    delay(60);
+    LEDOFF();
+    delay(60);
+  }
 }
 
 //Quickly scrolls the title across the display
 void scrollTitle()
 {
-    String titleStr = String("    reaction speed    ");
+  String titleStr = String("    reaction speed    ");
 
-    for(int x = 0 ; x < titleStr.length() - 4 ; x++)
+  for (int x = 0; x < titleStr.length() - 4; x++)
+  {
+    String tempStr = titleStr.substring(x, x + 4); //Chop out four letters from the string
+
+    segmentDisplay.write('v');     //Reset the display
+    segmentDisplay.print(tempStr); //Display this substring
+
+    for (int y = 0; y < 25; y++)
     {
-        String tempStr = titleStr.substring(x, x + 4); //Chop out four letters from the string
-
-        segmentDisplay.write('v'); //Reset the display
-        segmentDisplay.print(tempStr); //Display this substring
-
-        for(int y = 0 ; y < 25 ; y++)
-        {
-            if(digitalRead(button) == LOW) return; //If the button is pressed, bail!
-            delay(10);
-        }
+      if (digitalRead(button) == LOW)
+        return; //If the button is pressed, bail!
+      delay(10);
     }
+  }
 
-    segmentDisplay.write('v'); //Reset the display
-    segmentDisplay.print(gameTime); //Display the last game time
+  segmentDisplay.write('v');      //Reset the display
+  segmentDisplay.print(gameTime); //Display the last game time
 }
