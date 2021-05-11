@@ -17,13 +17,13 @@
 SoftwareSerial segmentDisplay(3, 2); //RX, TX to the OpenSegment display
 
 int LED = 9;
-int button = 7;
+int targetButton = 7;
+int startButton = 3;
 
 long timeDiff; //Global variable keeps track of your score
 int idleLoops = 0;
 
 String gameTime; //Contains the last game time
-int gamesPlayed; //Contains the total number of games played for the life of the device
 
 //These functions allow the LED to be really bright when on, and
 //just barely on when the game is in idle mode
@@ -38,26 +38,25 @@ void setup()
   pinMode(LED, OUTPUT);
   LEDOFF(); //Turn off LED
 
-  pinMode(button, INPUT_PULLUP);
+  pinMode(targetButton, INPUT_PULLUP);
+  pinMode(startButton, INPUT_PULLUP);
 
   randomSeed(analogRead(A1)); //Get noise to seed the random number generator
 
   segmentDisplay.begin(9600); //Talk to the Serial7Segment at 9600 bps
   segmentDisplay.write('v');  //Reset the display - this forces the cursor to return to the beginning of the display
 
+  LEDLOW();
   scrollTitle();
 }
 
 void loop()
 {
-  if (digitalRead(button) == LOW)
+  if (digitalRead(startButton) == LOW)
   {
-    Serial.println("Playing");
     playGame();
     idleLoops = 0;
   }
-
-  pulseTheButton(); //If no one is playing, pulse LED to intice them. Function takes 6 seconds to complete.
 
   idleLoops++;
   if (idleLoops > 9) //Play a screen saver every 60 seconds.
@@ -73,36 +72,35 @@ void playGame()
 
   delay(25); //Debounce the button a bit
 
-  while (digitalRead(button) == LOW)
-    ; //Wait for user to stop hitting button
+  while (digitalRead(startButton) == LOW)
+  {
+  } //Wait for user to stop hitting button
 
   LEDLOW(); //Turn LED on low to indicate the beginning of the game
 
   //Get random number of milliseconds
-  long lightTime = random(2000, 3500); //From 2 to 3.5 seconds
+  long lightTime = random(3000, 9000); //From 2 to 3.5 seconds
 
   long zeroTime = millis();
 
   while (millis() - zeroTime < lightTime) //Wait for random amount of time to go by
   {
     //If the user hits the button in this time then error out (cheater!)
-    if (digitalRead(button) == LOW)
+    if (digitalRead(targetButton) == LOW)
     {
       segmentDisplay.write('v'); //Reset the display
       segmentDisplay.print("-Err");
-      Serial.println("Err!");
       blinkButton();
       return;
     }
   }
 
   //Begin game
-  Serial.println("Go!");
   LEDON();
   long beginTime = millis(); //Record this as the beginning of the test
 
   //Wait for user to hit the button
-  while (digitalRead(button) == HIGH)
+  while (digitalRead(targetButton) == HIGH)
   {
     //Check to see if the user fails to respond in 10 seconds
     timeDiff = millis() - beginTime;
@@ -129,53 +127,9 @@ void playGame()
   segmentDisplay.write('v');      //Reset the display
   segmentDisplay.print(gameTime); //Display the game time
 
-  Serial.print("Reaction time:");
-  Serial.println(gameTime);
-
   blinkButton(); //Blink the LED to indicate the end of the game
 
-  //Record that we have played this game
-  gamesPlayed++;
-  Serial.print("This time played:");
-  Serial.println(gamesPlayed);
-
   //After the game is complete, the display will show the gameTime for awhile
-}
-
-//If there is no game going on, pulse the LED on/off
-//If the user ever presses the button then return immediately
-//This function takes approximately 6 seconds to complete
-void pulseTheButton(void)
-{
-  //Fade LED on
-  for (int fadeValue = 0; fadeValue <= 255; fadeValue += 5)
-  {
-    if (digitalRead(button) == LOW)
-      return;
-
-    analogWrite(LED, fadeValue);
-    delay(30);
-  }
-
-  //Fade LED off
-  for (int fadeValue = 255; fadeValue >= 0; fadeValue -= 5)
-  {
-    if (digitalRead(button) == LOW)
-      return;
-
-    analogWrite(LED, fadeValue);
-    delay(30);
-  }
-
-  //Turn LED off for awhile
-  for (int x = 0; x < 100; x++)
-  {
-    if (digitalRead(button) == LOW)
-      return;
-
-    analogWrite(LED, 0);
-    delay(30);
-  }
 }
 
 //Quickly blinks to button indicating the end of a game
@@ -204,7 +158,7 @@ void scrollTitle()
 
     for (int y = 0; y < 25; y++)
     {
-      if (digitalRead(button) == LOW)
+      if (digitalRead(targetButton) == LOW)
         return; //If the button is pressed, bail!
       delay(10);
     }
