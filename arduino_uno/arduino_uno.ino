@@ -21,7 +21,6 @@ int targetButton = 7;
 int startButton = 3;
 
 long timeDiff; //Global variable keeps track of your score
-int idleLoops = 0;
 
 String gameTime; //Contains the last game time
 
@@ -55,14 +54,6 @@ void loop()
   if (digitalRead(startButton) == LOW)
   {
     playGame();
-    idleLoops = 0;
-  }
-
-  idleLoops++;
-  if (idleLoops > 9) //Play a screen saver every 60 seconds.
-  {
-    scrollTitle(); //Screen saver = display title
-    idleLoops = 0;
   }
 }
 
