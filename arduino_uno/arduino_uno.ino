@@ -21,6 +21,8 @@ int targetButton = 7;
 int startButton = 3;
 
 long timeDiff; //Global variable keeps track of your score
+int idleLoops = 0;
+bool gamePlayed = false;
 
 String gameTime; //Contains the last game time
 
@@ -54,11 +56,21 @@ void loop()
   if (digitalRead(startButton) == LOW)
   {
     playGame();
+    idleLoops = 0;
+  }
+
+  idleLoops++;
+  if (idleLoops > 9 && !gamePlayed) //Play a screen saver every 60 seconds.
+  {
+    scrollTitle(); //Screen saver = display title
+    idleLoops = 0;
   }
 }
 
 void playGame()
 {
+  gamePlayed = true;
+
   segmentDisplay.write('v'); //Reset the display
 
   delay(25); //Debounce the button a bit
@@ -154,7 +166,4 @@ void scrollTitle()
       delay(10);
     }
   }
-
-  segmentDisplay.write('v');      //Reset the display
-  segmentDisplay.print(gameTime); //Display the last game time
 }
